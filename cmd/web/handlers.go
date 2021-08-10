@@ -3,17 +3,16 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strconv"
 )
 
-func home(w http.ResponseWriter, r *http.Request) {
+func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
-	// Check if the currenct request URL path exactly matches "/" 
+	// Check if the currenct request URL path exactly matches "/"
 	// If it doesn't, give a not found error and return from this handler
-	if (r.URL.Path != "/"){
-		http.NotFound(w,r)
+	if r.URL.Path != "/" {
+		app.notFound(w)
 		return
 	}
 
@@ -29,48 +28,42 @@ func home(w http.ResponseWriter, r *http.Request) {
 	ts, err := template.ParseFiles(files...)
 
 	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, err)
 		return
 	}
 
 	// Write the template content as the response body.
 	err = ts.Execute(w, nil)
 	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, err)
 		return
 	}
 }
 
 // show a snippet
-func showSnippet(w http.ResponseWriter, r *http.Request){
-	
+func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
+
 	// Get the id from the query params - ?id=<somenumber>
 	// .Query().Get() returns "" if it doesn't exist
 	// Atoi will return an error if it can't convert the value.
 
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
 
-	if err != nil || id < 1{
-		http.NotFound(w,r)
+	if err != nil || id < 1 {
+		app.notFound(w)
 		return
 	}
-	
-	
-	
-	fmt.Fprintf(w, "We are in show a snippet, displaying snippet: %d", id)
 
+	fmt.Fprintf(w, "We are in show a snippet, displaying snippet: %d", id)
 
 }
 
-func createSnippet(w http.ResponseWriter, r *http.Request) {
+func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
 		w.Header().Set("Allow", "POST")
 		// w.WriteHeader(http.StatusMethodNotAllowed)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "Method not allowed")
+		app.clientError(w, http.StatusMethodNotAllowed)
 		return
 	}
 	fmt.Fprintf(w, "Create a snippet")
