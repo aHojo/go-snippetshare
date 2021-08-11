@@ -14,15 +14,21 @@
 </head>
 <body>
   <header>
-    <h1><a href="/">SnippetBox</a></h1>
+    <h1>
+      <a href="/">SnippetBox</a>
+    </h1>
   </header>
-  <nav><a href="/">Home</a></nav>
+  <nav>
+    <a href="/">Home</a>
+    <a href='/snippet/create'>Create Snippet</a>
+  </nav>
 
   <section>
     {{ template "body" . }}
   </section>
 
   {{ template "footer" . }}
+  <script src="/static/js/main.js"></script>
 </body>
 </html>
 
