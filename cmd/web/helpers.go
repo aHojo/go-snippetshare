@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/ahojo/snippetbox/pkg/models"
 	"github.com/justinas/nosurf"
 )
 
@@ -40,7 +41,7 @@ func (app *application) addDefaultData(td *templateData, r *http.Request) *templ
 	td.CurrentYear = time.Now().Year()
 	td.Flash = app.session.PopString(r, "flash")
 	td.AuthenticatedUser = app.authenticatedUser(r)
-	
+
 	return td
 }
 
@@ -69,8 +70,14 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, name stri
 	buf.WriteTo(w)
 }
 
-
 // Returns the id of the current user
-func (app *application) authenticatedUser(r *http.Request) int {
-	return app.session.GetInt(r, "id")
+func (app *application) authenticatedUser(r *http.Request) *models.User {
+	// return app.session.GetInt(r, "id")
+	user, ok := r.Context().Value(contextKeyUser).(*models.User)
+	if !ok {
+		return nil
+	}
+
+	return user
+
 }

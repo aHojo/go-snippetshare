@@ -15,7 +15,7 @@ func (app *application) routes(cfg *Config) http.Handler {
 
 	// Create a new middleware chain containing the middleware for our 
 	// Application routes. This will only contain the session middleware for now
-	dynamicChain := alice.New(app.session.Enable, noSurf)
+	dynamicChain := alice.New(app.session.Enable, noSurf, app.authenticate)
 
 	// Use the http.NewServeMux() to initialize a new servemux, then
 	// register the home function as the handler for the "/" path

@@ -16,6 +16,11 @@ import (
 	_ "github.com/go-sql-driver/mysql" // import mysql driver
 )
 
+
+// Defining our new type for context
+type contextKey string 
+var contextKeyUser = contextKey("user")
+
 type Config struct {
 	Addr      string
 	StaticDir string
