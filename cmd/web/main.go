@@ -28,6 +28,7 @@ type application struct {
 	snippets      *mysql.SnippetModel
 	templateCache map[string]*template.Template
 	session       *sessions.Session
+	users         *mysql.UserModel
 }
 
 func main() {
@@ -76,6 +77,7 @@ func main() {
 		infoLog:       infoLog,
 		errorLog:      errorLog,
 		snippets:      &mysql.SnippetModel{DB: db}, // pass the database connection to our snippet model
+		users:         &mysql.UserModel{DB: db},
 		templateCache: templateCache,
 		session:       session,
 	}
@@ -84,23 +86,23 @@ func main() {
 	// Create this tls.Config struct to hold non default settings
 	tlsConfig := &tls.Config{
 		PreferServerCipherSuites: true, //  field controls whether the HTTPS connection should use Go’s favored cipher suites or the user’s favored cipher suites.
-		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
-		/* 
-		If we want to use a custom cipher suite, we can do so by adding it to the CipherSuites field.
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		},
+		CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
+		/*
+			If we want to use a custom cipher suite, we can do so by adding it to the CipherSuites field.
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			},
 
-		Recommended here: https://wiki.mozilla.org/Security/Server_Side_TLS
-		
-		Set accepted TLS versions.
-		MinVersion: tls.VersionTLS12,
-		MaxVersion: tls.VersionTLS12,
+			Recommended here: https://wiki.mozilla.org/Security/Server_Side_TLS
+
+			Set accepted TLS versions.
+			MinVersion: tls.VersionTLS12,
+			MaxVersion: tls.VersionTLS12,
 
 		*/
 	}
@@ -109,13 +111,13 @@ func main() {
 	// err := http.ListenAndServe(cfg.Addr, mux)
 	// errorLog.Fatal(err) // calls os.exit(1)
 	srv := &http.Server{
-		Addr:     cfg.Addr,
-		Handler:  app.routes(cfg), // cfg is already a pointer.,
-		ErrorLog: errorLog,
-		TLSConfig: tlsConfig,
-		IdleTimeout: time.Minute,
-		ReadTimeout: 5*time.Second,
-		WriteTimeout: 10*time.Second,
+		Addr:         cfg.Addr,
+		Handler:      app.routes(cfg), // cfg is already a pointer.,
+		ErrorLog:     errorLog,
+		TLSConfig:    tlsConfig,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 	infoLog.Printf("Starting server on %s", cfg.Addr)
 	// ListenAndServe is blocking, so we need to start it in a goroutine

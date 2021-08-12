@@ -27,9 +27,16 @@ func (app *application) routes(cfg *Config) http.Handler {
 	mux := pat.New()
 	// mux.Get("/", app.session.Enable(http.HandlerFunc(app.home))) // If we were not using Alice to manage our middleware.
 	mux.Get("/", dynamicChain.ThenFunc(app.home))
-	mux.Get("/snippet/create", dynamicChain.ThenFunc(app.createSnippetForm))
-	mux.Post("/snippet/create", dynamicChain.ThenFunc(app.createSnippet))
+	mux.Get("/snippet/create", dynamicChain.Append(app.requireAuthenticatedUser).ThenFunc(app.createSnippetForm))
+	mux.Post("/snippet/create", dynamicChain.Append(app.requireAuthenticatedUser).ThenFunc(app.createSnippet))
 	mux.Get("/snippet/:id", dynamicChain.ThenFunc(app.showSnippet))
+
+	// Add the five new routes.
+	mux.Get("/user/signup", dynamicChain.ThenFunc(app.signupUserForm))
+	mux.Post("/user/signup", dynamicChain.ThenFunc(app.signupUser))
+	mux.Get("/user/login", dynamicChain.ThenFunc(app.loginUserForm))
+	mux.Post("/user/login", dynamicChain.ThenFunc(app.loginUser))
+	mux.Post("/user/logout", dynamicChain.Append(app.requireAuthenticatedUser).ThenFunc(app.logoutUser))
 
 	// Create a fileserver to serve static content from
 	fileServer := http.FileServer(http.Dir(cfg.StaticDir))

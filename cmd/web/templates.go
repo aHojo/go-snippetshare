@@ -13,13 +13,14 @@ import (
 // Any dynamic data that we want to pass to our HTML templates.
 //
 type templateData struct {
+	AuthenticatedUser int
+	CurrentYear int
+	Flash string
 	Snippet     *models.Snippet
 	Snippets    []*models.Snippet
-	CurrentYear int
 	// FormData		url.Values // Same underlying type as r.PostForm
 	// FormErrors	map[string]string
 	Form *forms.Form // This is replaceing the FormData and FormErrors field. 
-	Flash string
 }
 
 // initialize a template.FuncMap

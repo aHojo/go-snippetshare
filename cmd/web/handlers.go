@@ -191,19 +191,83 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 
 /* SIGNUP SECTION */
 func (app *application) signupUserForm(w http.ResponseWriter, r *http.Request){
-fmt.Fprintln(w, "Display the user signup form...")
+	app.render(w, r, "signup.page.tmpl", &templateData{
+		Form: forms.New(nil),
+	})
 }
 func (app *application) signupUser(w http.ResponseWriter, r *http.Request) {
-fmt.Fprintln(w, "Create a new user...")
+
+	// Parse the form Data
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+	}	
+
+	// Validate the form contents using the form helper we made earlier
+	form := forms.New(r.PostForm)
+	form.Required("name", "email", "password")
+	form.MatchesPattern("email", forms.EmailRegex)
+	form.MinLength("password", 10)
+
+	// If there are errors, redisplay the form
+	if !form.Valid() {
+		app.render(w, r, "signup.page.tmpl", &templateData{Form: form})
+		return
+	}
+
+	// Insert the user to the database
+	err = app.users.Insert(form.Get("name"), form.Get("email"), form.Get("password"))
+	if err == models.ErrDuplicateEmail {
+		fmt.Println(err == models.ErrDuplicateEmail)
+		form.Errors.Add("email", "Email already exists")
+		app.render(w, r, "signup.page.tmpl", &templateData{Form: form})
+		return
+	} else if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Add a confirmation flash message
+	app.session.Put(r, "flash", "You have successfully signed up!")
+	// redirect to the login page
+	http.Redirect(w,r, "/user/login", http.StatusSeeOther)
 }
 func (app *application) loginUserForm(w http.ResponseWriter, r *http.Request) {
-fmt.Fprintln(w, "Display the user login form...")
+
+	app.render(w, r, "login.page.tmpl", &templateData{ Form: forms.New(nil) })
+
 }
 func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
-fmt.Fprintln(w, "Authenticate and login the user...")
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// Check if valid credentials
+	form := forms.New(r.PostForm)
+	id, err := app.users.Authenticate(form.Get("email"), form.Get("password"))
+	if err == models.ErrInvalidCredentials {
+		form.Errors.Add("generic", "Wrong email or password")
+		app.render(w,r, "login.page.tmpl", &templateData{ Form: form })
+		return
+	} else if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Add the id to the current session
+	app.session.Put(r, "id", id)
+
+	// redirect to the create snippet page
+	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
 }
 func (app *application) logoutUser(w http.ResponseWriter, r *http.Request) {
-fmt.Fprintln(w, "Logout the user...")
+	// Remove the id from the current session
+	app.session.Remove(r, "id")
+	// add a flash message to the session to confirm they've been logged out
+	app.session.Put(r, "flash", "You have successfully logged out!")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 
