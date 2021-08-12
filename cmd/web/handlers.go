@@ -11,6 +11,10 @@ import (
 	"github.com/ahojo/snippetbox/pkg/models"
 )
 
+func ping(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("pong"))
+	
+}
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 	/* CODE BELOW IS HANDLED BY PAT NOW

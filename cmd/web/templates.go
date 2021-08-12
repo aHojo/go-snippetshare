@@ -33,6 +33,9 @@ var functions template.FuncMap = template.FuncMap{
 // Create a human readable string of the time given by the database.
 // THIS CAN ONLY RETURN 1 value.
 func humanDate(t time.Time) string {
+	if t.IsZero(){
+		return ""
+	}
 	return t.Format("02 Jan 2006 at 15:04")
 }
 
