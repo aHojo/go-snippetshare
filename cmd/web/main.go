@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"html/template"
@@ -76,11 +77,34 @@ func main() {
 		errorLog:      errorLog,
 		snippets:      &mysql.SnippetModel{DB: db}, // pass the database connection to our snippet model
 		templateCache: templateCache,
-		session: session,
+		session:       session,
 	}
 	// End Database setup
 
-	infoLog.Printf("Starting server on %s", cfg.Addr)
+	// Create this tls.Config struct to hold non default settings
+	tlsConfig := &tls.Config{
+		PreferServerCipherSuites: true, //  field controls whether the HTTPS connection should use Go’s favored cipher suites or the user’s favored cipher suites.
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+		/* 
+		If we want to use a custom cipher suite, we can do so by adding it to the CipherSuites field.
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+		},
+
+		Recommended here: https://wiki.mozilla.org/Security/Server_Side_TLS
+		
+		Set accepted TLS versions.
+		MinVersion: tls.VersionTLS12,
+		MaxVersion: tls.VersionTLS12,
+
+		*/
+	}
+
 	// Start our server on port 4000, pass in our mux.
 	// err := http.ListenAndServe(cfg.Addr, mux)
 	// errorLog.Fatal(err) // calls os.exit(1)
@@ -88,9 +112,16 @@ func main() {
 		Addr:     cfg.Addr,
 		Handler:  app.routes(cfg), // cfg is already a pointer.,
 		ErrorLog: errorLog,
+		TLSConfig: tlsConfig,
+		IdleTimeout: time.Minute,
+		ReadTimeout: 5*time.Second,
+		WriteTimeout: 10*time.Second,
 	}
+	infoLog.Printf("Starting server on %s", cfg.Addr)
 	// ListenAndServe is blocking, so we need to start it in a goroutine
-	err = srv.ListenAndServe()
+	// err = srv.ListenAndServe()
+	// For TLS
+	err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	errorLog.Fatal(err) // calls os.exit(1)
 }
 

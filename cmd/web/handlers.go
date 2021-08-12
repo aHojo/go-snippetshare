@@ -189,6 +189,24 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, fmt.Sprintf("/snippet/%d", id), http.StatusSeeOther)
 }
 
+/* SIGNUP SECTION */
+func (app *application) signupUserForm(w http.ResponseWriter, r *http.Request){
+fmt.Fprintln(w, "Display the user signup form...")
+}
+func (app *application) signupUser(w http.ResponseWriter, r *http.Request) {
+fmt.Fprintln(w, "Create a new user...")
+}
+func (app *application) loginUserForm(w http.ResponseWriter, r *http.Request) {
+fmt.Fprintln(w, "Display the user login form...")
+}
+func (app *application) loginUser(w http.ResponseWriter, r *http.Request) {
+fmt.Fprintln(w, "Authenticate and login the user...")
+}
+func (app *application) logoutUser(w http.ResponseWriter, r *http.Request) {
+fmt.Fprintln(w, "Logout the user...")
+}
+
+
 /*
 WE USED THIS BEFORE CREATING THE PARSE FORM STRUCT
 

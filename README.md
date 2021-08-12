@@ -5,7 +5,7 @@
 
 CREATE DATABASE snippetbox CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-use snippetbox
+use snippetbox;
 
 CREATE TABLE snippets (
   id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -14,6 +14,17 @@ CREATE TABLE snippets (
   created DATETIME NOT NULL,
   expires DATETIME NOT NULL
 );
+
+-- User Table
+CREATE TABLE users (
+    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    hashed_password CHAR(60) NOT NULL,
+    created DATETIME NOT NULL
+);
+
+ALTER TABLE users ADD CONSTRAINT users_uc_email UNIQUE (email);
 
 CREATE INDEX idx_snippets_create ON snippets(created);
 
@@ -83,7 +94,6 @@ ALTER USER 'appadmin'@'localhost' IDENTIFIED BY '<insert password here';
 
 -- test the user
 mysql -D snippetbox -u appadmin -p
-
 ```
 
 ## Get the mysql golang driver
@@ -93,3 +103,21 @@ mysql -D snippetbox -u appadmin -p
 # Test Inserting a snippet
 Only faked data is in createSnippet() right now. 
 `curl -iL -X POST http://localhost:4000/snippet/create`
+
+# For TLS Development only
+
+In project dir, create tls directory
+```bash
+mkdir tls
+cd tls
+```
+Generate the cert
+```bash
+$ go run /usr/local/go/src/crypto/tls/generate_cert.go --rsa-bits=2048 --host=localhost
+2021/08/12 13:21:41 wrote cert.pem
+2021/08/12 13:21:41 wrote key.pem
+```
+place them in the main function, when starting server
+```go
+srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
+```
