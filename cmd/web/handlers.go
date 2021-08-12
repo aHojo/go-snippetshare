@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/ahojo/snippetbox/pkg/forms"
 	"github.com/ahojo/snippetbox/pkg/models"
 )
 
@@ -95,9 +96,16 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Use the PopString method to retrieve the value for the "flash" key.
+	// PopString will also delete the key and value from the session data, so 
+	// it acts like a one-time fetch. 
+	// If there is no matching key, it will return an empty string.
+	//flash := app.session.PopString(r, "flash") no longer needed because it's in addDefaultData
+
 	// Create the type that will hold the data that we will pass into the template
 	snippetData := templateData{
 		Snippet: snippet,
+		//Flash: flash, no longer needed because it's in addDefaultData
 	}
 	app.render(w, r, "show.page.tmpl", &snippetData)
 	/* OLD WAY OF DOING THINGS
@@ -127,9 +135,10 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 // Handler that will return a form to create a new snippet
 func (app *application) createSnippetForm(w http.ResponseWriter, r *http.Request) {
 
-	app.render(w, r, "create.page.tmpl", nil)
+	app.render(w, r, "create.page.tmpl", &templateData{
+		Form: forms.New(nil),
+	})
 
-	
 }
 
 func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
@@ -149,20 +158,81 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 		app.clientError(w, http.StatusBadRequest)
 	}
 
+	// Create a new form Struct that contains the POST form data
+	form := forms.New(r.PostForm)
+	form.Required("title", "content", "expires")
+	form.MaxLength("title", 100)
+	form.PermittedValues("expires", "365", "7", "1")
+
+	// If the form isn't valid, redisplay the form passin in the form.Form object
+	if !form.Valid() {
+		app.render(w, r, "create.page.tmpl", &templateData{Form: form})
+		return
+	}
+
+	// Because the form data (with type url.Values) has been anonymously embedded
+	// We can use the Get() method to retrieve the validated data
+	id, err := app.snippets.Insert(form.Get("title"), form.Get("content"), form.Get("expires"))
+	if err != nil {
+		app.serverError(w, err)
+	}
+
+	// Use the Put() method from golangcollege session package to add a string value, 
+	// and the key "flash" to the session data.
+	// If there is no session for the user, it will create a new empty session. 
+	app.session.Put(r, "flash", "Snippet successfully created!")
+
+
+	// Redirect to the page for the snippet
+	// http.Redirect(w, r, fmt.Sprintf("/snippet?id=%d", id), http.StatusSeeOther)
+	// We are now using semantic url
+	http.Redirect(w, r, fmt.Sprintf("/snippet/%d", id), http.StatusSeeOther)
+}
+
+/*
+WE USED THIS BEFORE CREATING THE PARSE FORM STRUCT
+
 	// use the r.PostForm map to get the values of the form fields
 	title := r.PostForm.Get("title")
 	content := r.PostForm.Get("content")
 	expires := r.PostForm.Get("expires")
 
-	
+	// Create a map to hold any of our errors
+	errors := make(map[string]string)
+
+	// Check if the title is not blank and not more than 100 chars
+	if strings.TrimSpace(title) == "" {
+		errors["title"] = "Title cannot be blank"
+	} else if utf8.RuneCountInString(title) > 100 {
+		errors["title"] = "Title cannot be more than 100 characters"
+	}
+
+	// Check that the Content is not blank
+	if strings.TrimSpace(content) == "" {
+		errors["content"] = "Content cannot be blank"
+	}
+
+	// Check that the expires is not blank and matches one of the permitted values
+	// Permitted Values: "1", "7", "365"
+	if strings.TrimSpace(expires) == "" {
+		errors["expires"] = "Expires cannot be blank"
+	} else if expires != "1" && expires != "7" && expires != "365" {
+		errors["expires"] = "Expires must be 1, 7, or 365"
+	}
+
+	// If there are any errors, send them back to the client
+	// Sends the errors, and previously submited form data
+	if len(errors) > 0 {
+		app.render(w, r, "create.page.tmpl", &templateData{
+			FormErrors: errors,
+			FormData:   r.PostForm,
+		})
+	}
+
 	// Pass the data to the SnippetModel.Insert function. Get the id back
 	id, err := app.snippets.Insert(title, content, expires)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	// Redirect to the page for the snippet
-	// http.Redirect(w, r, fmt.Sprintf("/snippet?id=%d", id), http.StatusSeeOther)
-	// We are now using semantic url
-	http.Redirect(w, r, fmt.Sprintf("/snippet/%d", id), http.StatusSeeOther)
-}
+*/

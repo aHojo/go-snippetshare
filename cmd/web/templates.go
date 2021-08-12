@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ahojo/snippetbox/pkg/forms"
 	"github.com/ahojo/snippetbox/pkg/models"
 )
 
@@ -15,6 +16,10 @@ type templateData struct {
 	Snippet     *models.Snippet
 	Snippets    []*models.Snippet
 	CurrentYear int
+	// FormData		url.Values // Same underlying type as r.PostForm
+	// FormErrors	map[string]string
+	Form *forms.Form // This is replaceing the FormData and FormErrors field. 
+	Flash string
 }
 
 // initialize a template.FuncMap

@@ -12,6 +12,11 @@ func (app *application) routes(cfg *Config) http.Handler {
 
 	// Create a middleware chain containing our "standard middleware" that is used for every request.
 	chain := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
+
+	// Create a new middleware chain containing the middleware for our 
+	// Application routes. This will only contain the session middleware for now
+	dynamicChain := alice.New(app.session.Enable)
+
 	// Use the http.NewServeMux() to initialize a new servemux, then
 	// register the home function as the handler for the "/" path
 	//mux := http.NewServeMux()                            // this is  the default, but still define it for security.
@@ -20,10 +25,11 @@ func (app *application) routes(cfg *Config) http.Handler {
 	//mux.HandleFunc("/snippet", app.showSnippet)          // fixed path, url must match this exactly.
 	//mux.HandleFunc("/snippet/create", app.createSnippet) // fixed path, url must match this exactly.
 	mux := pat.New()
-	mux.Get("/", http.HandlerFunc(app.home))
-	mux.Get("/snippet/create", http.HandlerFunc(app.createSnippetForm))
-	mux.Post("/snippet/create", http.HandlerFunc(app.createSnippet))
-	mux.Get("/snippet/:id", http.HandlerFunc(app.showSnippet))
+	// mux.Get("/", app.session.Enable(http.HandlerFunc(app.home))) // If we were not using Alice to manage our middleware.
+	mux.Get("/", dynamicChain.ThenFunc(app.home))
+	mux.Get("/snippet/create", dynamicChain.ThenFunc(app.createSnippetForm))
+	mux.Post("/snippet/create", dynamicChain.ThenFunc(app.createSnippet))
+	mux.Get("/snippet/:id", dynamicChain.ThenFunc(app.showSnippet))
 
 	// Create a fileserver to serve static content from
 	fileServer := http.FileServer(http.Dir(cfg.StaticDir))

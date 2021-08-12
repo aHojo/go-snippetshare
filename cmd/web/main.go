@@ -7,8 +7,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/ahojo/snippetbox/pkg/models/mysql"
+	"github.com/golangcollege/sessions"
 
 	_ "github.com/go-sql-driver/mysql" // import mysql driver
 )
@@ -24,6 +26,7 @@ type application struct {
 	infoLog       *log.Logger
 	snippets      *mysql.SnippetModel
 	templateCache map[string]*template.Template
+	session       *sessions.Session
 }
 
 func main() {
@@ -33,6 +36,8 @@ func main() {
 	flag.StringVar(&cfg.Addr, "addr", ":4000", "Http Network address")
 	flag.StringVar(&cfg.StaticDir, "static-dir", "./ui/static", "Http Network address")
 	dsn := flag.String("dsn", "root:password@/snippetbox?parseTime=true", "Mysql connection info") // parseTime=true is needed to use time.Time. Converts MYSQL datetime to time.Time
+	// Needs to be 32 bytes long. Used to encrypt and authenticate session cookies.
+	secret := flag.String("secret", "z6MAh3pPbnEHbf*+3Gd8qGWKTzbpa@ge", "Secret")
 	flag.Parse()
 
 	/* // if we want to log to a file, we can use the standard log package
@@ -60,12 +65,18 @@ func main() {
 	}
 	defer db.Close()
 
+	// Session Management
+	// Use the sessions.New() function to initialize a new session manager.
+	// Pass in the secret key as the param, sessions will expire after 12 hours.
+	session := sessions.New([]byte(*secret))
+	session.Lifetime = 12 * time.Hour
 	app := &application{
 
 		infoLog:       infoLog,
 		errorLog:      errorLog,
 		snippets:      &mysql.SnippetModel{DB: db}, // pass the database connection to our snippet model
 		templateCache: templateCache,
+		session: session,
 	}
 	// End Database setup
 
