@@ -72,6 +72,9 @@ func main() {
 	// Pass in the secret key as the param, sessions will expire after 12 hours.
 	session := sessions.New([]byte(*secret))
 	session.Lifetime = 12 * time.Hour
+	session.Secure = true
+	session.SameSite = http.SameSiteStrictMode
+
 	app := &application{
 
 		infoLog:       infoLog,

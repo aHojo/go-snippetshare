@@ -16,6 +16,7 @@ type templateData struct {
 	AuthenticatedUser int
 	CurrentYear int
 	Flash string
+	CSRFToken string
 	Snippet     *models.Snippet
 	Snippets    []*models.Snippet
 	// FormData		url.Values // Same underlying type as r.PostForm
